@@ -9,6 +9,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
+import java.util.concurrent.TimeUnit
 
 const val API_KEY = "abec7b3b1225efd20e83e8d1a6ec0dc7"
 
@@ -18,28 +19,29 @@ interface APIService {
 
     @GET("current")
     fun getWeather(
-        @Query("query") location: String,
-        @Query("lang") languageCode: String = "en"
+        @Query("query") location: String
     ): Deferred<WeatherData>
 
 
     companion object {
         operator fun invoke(): APIService {
             val requestInterceptor = Interceptor { chain ->
-                val url = chain.request()
+                val apiKey = chain.request()
                     .url()
                     .newBuilder()
                     .addQueryParameter("access_key", API_KEY)
                     .build()
                 val request = chain.request()
                     .newBuilder()
-                    .url(url)
+                    .url(apiKey)
                     .build()
-                return@Interceptor chain.proceed(request)
+                 chain.proceed(request)
             }
 
             val okHttpClient = OkHttpClient.Builder()
                 .addInterceptor(requestInterceptor)
+                .connectTimeout(5, TimeUnit.SECONDS)
+                .readTimeout(5, TimeUnit.SECONDS)
                 .build()
 
             return Retrofit.Builder()
